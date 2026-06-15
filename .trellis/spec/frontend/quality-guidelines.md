@@ -30,22 +30,17 @@ Questions to answer:
 
 ## Required Patterns
 
-### Convention: Platform Checks
+### Convention: tvOS Implementation
 
-**What**: Use `AppPlatform` from `lib/utils/app_platform.dart` for platform intent checks instead of scattering raw `Platform.is*` combinations when behavior differs by device class.
+**What**: tvOS support must live in a native Swift Apple TV project under `tvos/OneAnimeTV`. Do not add or regenerate Flutter-based tvOS hosts; Flutter does not provide an official Apple tvOS target.
 
-**Why**: tvOS can share Apple/iOS runtime paths while needing living-room layout behavior. Centralizing checks keeps phone, desktop, and TV behavior from drifting.
+**Why**: A Flutter-style `Runner` scaffold can parse as an Xcode project but is not a reliable Apple TV app path. Native tvOS code can use UIKit focus, `UITabBarController`, collection-view grids, and `AVPlayerViewController`.
 
-**Example**:
-```dart
-if (AppPlatform.isHandheldMobile) {
-  // phone-only status bar or compact UI behavior
-}
-
-if (AppPlatform.usesTVLayout) {
-  // landscape, remote-friendly TV behavior
-}
-```
+**Contracts**:
+- Anime list: `GET https://d1zquzjgwo9yb.cloudfront.net/`
+- Anime page: `GET https://anime1.me/?cat=<id>`
+- Video source: `POST https://v.anime1.me/api` with form body `d=<data-apireq>`
+- Playback headers: include `User-Agent`, `Referer: https://anime1.me`, and filtered video cookies.
 
 ---
 

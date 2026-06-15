@@ -1,12 +1,19 @@
-# oneAnime tvOS Host
+# oneAnime Native tvOS
 
-This folder is a tvOS host scaffold copied from the iOS host so Apple TV work can happen without removing the existing iOS project.
+Flutter does not provide an official Apple tvOS target, so this folder contains a native Swift/tvOS companion project.
 
-Important details:
+The project intentionally mirrors the tvOS direction from `yichengchen/ATV-Bilibili-demo`:
 
-- `Runner.xcodeproj` targets `appletvos`, `TARGETED_DEVICE_FAMILY = 3`, and bundle id `com.example.oneanime.tvos`.
-- `Flutter/Debug.xcconfig` and `Flutter/Release.xcconfig` pass `ONEANIME_TVOS=true` through `DART_DEFINES`.
-- Dart code reads that flag through `AppPlatform.isTvOS` and avoids phone-only UI behavior such as portrait reset.
-- The scaffold keeps the same Flutter entry point (`lib/main.dart`) and app features.
+- tab-based TV navigation
+- focusable collection grid cards
+- large 10-foot typography
+- AVKit playback
 
-Before App Store packaging, replace the copied iOS icon catalog with proper layered tvOS app icon and top shelf assets.
+The data contracts come from this Flutter app:
+
+- anime list: `https://d1zquzjgwo9yb.cloudfront.net/`
+- anime detail page: `https://anime1.me/?cat=<id>`
+- video source API: `POST https://v.anime1.me/api` with form body `d=<data-apireq>`
+- playback headers: `User-Agent`, `Referer`, and filtered video cookies
+
+Open `tvos/OneAnimeTV.xcodeproj` in Xcode and run the `OneAnimeTV` scheme on an Apple TV simulator or device.
