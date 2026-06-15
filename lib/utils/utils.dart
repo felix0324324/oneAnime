@@ -12,6 +12,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:crypto/crypto.dart';
 import 'package:oneanime/utils/mortis.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:oneanime/utils/app_platform.dart';
 
 class Utils {
   static Future<bool> isLowResolution() async {
@@ -24,7 +25,6 @@ class Utils {
     }
     return false;
   }
-
 
   static String getRandomUA() {
     final random = Random();
@@ -100,7 +100,7 @@ class Utils {
 
   /// 判断是否为桌面设备
   static bool isDesktop() {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (AppPlatform.isDesktop) {
       return true;
     }
     return false;
@@ -115,10 +115,9 @@ class Utils {
     return isWideScreen;
   }
 
-
   /// 判断设备是否为平板
   static bool isTablet() {
-    return isWideScreen() && !isDesktop();
+    return isWideScreen() && !AppPlatform.usesTVLayout && !isDesktop();
   }
 
   /// 判断设备是否需要紧凑布局
@@ -128,7 +127,7 @@ class Utils {
 
   // 进入全屏显示
   static Future<void> enterFullScreen() async {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (AppPlatform.usesWindowManager) {
       await windowManager.setFullScreen(true);
       return;
     }
@@ -141,7 +140,7 @@ class Utils {
   //退出全屏显示
   static Future<void> exitFullScreen() async {
     debugPrint('退出全屏模式');
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (AppPlatform.usesWindowManager) {
       await windowManager.setFullScreen(false);
     }
     dynamic document;
@@ -149,7 +148,7 @@ class Utils {
     try {
       if (kIsWeb) {
         document.exitFullscreen();
-      } else if (Platform.isAndroid || Platform.isIOS) {
+      } else if (AppPlatform.isHandheldMobile) {
         if (Platform.isAndroid &&
             (await DeviceInfoPlugin().androidInfo).version.sdkInt < 29) {
           mode = SystemUiMode.manual;
@@ -159,7 +158,7 @@ class Utils {
           overlays: SystemUiOverlay.values,
         );
         if (isCompact()) {
-          verticalScreen();
+          await verticalScreen();
         }
       }
     } catch (exception, stacktrace) {
@@ -174,7 +173,7 @@ class Utils {
     try {
       if (kIsWeb) {
         await document.documentElement?.requestFullscreen();
-      } else if (Platform.isAndroid || Platform.isIOS) {
+      } else if (AppPlatform.isMobile) {
         await SystemChrome.setPreferredOrientations(
           [
             DeviceOrientation.landscapeLeft,
@@ -190,6 +189,9 @@ class Utils {
 
   //竖屏
   static Future<void> verticalScreen() async {
+    if (AppPlatform.usesTVLayout) {
+      return;
+    }
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);

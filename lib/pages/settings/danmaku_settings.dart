@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 import 'package:oneanime/bean/settings/settings.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:oneanime/pages/popular/popular_controller.dart';
 import 'package:oneanime/bean/appbar/sys_app_bar.dart';
 import 'package:oneanime/i18n/strings.g.dart';
+import 'package:oneanime/utils/app_platform.dart';
 
 class DanmakuSettingsPage extends StatefulWidget {
   const DanmakuSettingsPage({super.key});
@@ -36,7 +36,7 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
     defaultDanmakuDuration =
         setting.get(SettingBoxKey.danmakuDuration, defaultValue: 8);
     defaultDanmakuFontSize = setting.get(SettingBoxKey.danmakuFontSize,
-        defaultValue: (Platform.isIOS || Platform.isAndroid) ? 16.0 : 25.0);
+        defaultValue: AppPlatform.isHandheldMobile ? 16.0 : 25.0);
   }
 
   void updateDanmakuArea(double i) async {
@@ -168,9 +168,7 @@ class _DanmakuSettingsPageState extends State<DanmakuSettingsPage> {
                         TextButton(
                           onPressed: () async {
                             updateDanmakuFontSize(
-                                (Platform.isIOS || Platform.isAndroid)
-                                    ? 16.0
-                                    : 25.0);
+                                AppPlatform.isHandheldMobile ? 16.0 : 25.0);
                             SmartDialog.dismiss();
                           },
                           child: Text(i18n.dialog.setDefault),

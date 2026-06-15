@@ -30,9 +30,22 @@ Questions to answer:
 
 ## Required Patterns
 
-<!-- Patterns that must always be used -->
+### Convention: Platform Checks
 
-(To be filled by the team)
+**What**: Use `AppPlatform` from `lib/utils/app_platform.dart` for platform intent checks instead of scattering raw `Platform.is*` combinations when behavior differs by device class.
+
+**Why**: tvOS can share Apple/iOS runtime paths while needing living-room layout behavior. Centralizing checks keeps phone, desktop, and TV behavior from drifting.
+
+**Example**:
+```dart
+if (AppPlatform.isHandheldMobile) {
+  // phone-only status bar or compact UI behavior
+}
+
+if (AppPlatform.usesTVLayout) {
+  // landscape, remote-friendly TV behavior
+}
+```
 
 ---
 

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_modular/flutter_modular.dart';
@@ -13,12 +12,13 @@ import 'package:media_kit/media_kit.dart';
 import 'package:oneanime/i18n/strings.g.dart';
 import 'package:provider/provider.dart';
 import 'package:oneanime/bean/settings/theme_provider.dart';
+import 'package:oneanime/utils/app_platform.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
   LocaleSettings.useDeviceLocale();
-  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  if (AppPlatform.usesWindowManager) {
     await windowManager.ensureInitialized();
     bool isLowResolution = await Utils.isLowResolution();
     WindowOptions windowOptions = WindowOptions(
@@ -33,7 +33,7 @@ void main() async {
       await windowManager.focus();
     });
   }
-  if (Platform.isAndroid || Platform.isIOS) {
+  if (AppPlatform.isHandheldMobile) {
     // 小白条、导航栏沉浸
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -41,6 +41,10 @@ void main() async {
       systemNavigationBarDividerColor: Colors.transparent,
       statusBarColor: Colors.transparent,
     ));
+  }
+  if (AppPlatform.isTvOS) {
+    await Utils.landScape();
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   }
   // SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   try {

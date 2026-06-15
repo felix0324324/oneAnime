@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -25,6 +24,7 @@ import 'package:oneanime/utils/storage.dart';
 import 'package:oneanime/utils/utils.dart';
 import 'package:oneanime/i18n/strings.g.dart';
 import 'package:oneanime/utils/constans.dart';
+import 'package:oneanime/utils/app_platform.dart';
 
 class VideoPage extends StatefulWidget {
   const VideoPage({super.key});
@@ -162,8 +162,7 @@ class _VideoPageState extends State<VideoPage>
     });
     bool alwaysOntop =
         setting.get(SettingBoxKey.alwaysOntop, defaultValue: true);
-    if (alwaysOntop &&
-        (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+    if (alwaysOntop && AppPlatform.usesWindowManager) {
       windowManager.setAlwaysOnTop(true);
     }
     init();
@@ -177,7 +176,7 @@ class _VideoPageState extends State<VideoPage>
     _opacity = setting.get(SettingBoxKey.danmakuOpacity, defaultValue: 1.0);
     _duration = setting.get(SettingBoxKey.danmakuDuration, defaultValue: 8);
     _fontSize = setting.get(SettingBoxKey.danmakuFontSize,
-        defaultValue: (Platform.isIOS || Platform.isAndroid) ? 16.0 : 25.0);
+        defaultValue: AppPlatform.isHandheldMobile ? 16.0 : 25.0);
     danmakuArea = setting.get(SettingBoxKey.danmakuArea, defaultValue: 1.0);
     _danmakuUseSystemFont =
         setting.get(SettingBoxKey.useSystemFont, defaultValue: false);
@@ -220,7 +219,7 @@ class _VideoPageState extends State<VideoPage>
     videoController.playing = false;
     videoController.currentPosition = Duration.zero;
     videoController.duration = Duration.zero;
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+    if (AppPlatform.usesWindowManager) {
       windowManager.setAlwaysOnTop(false);
       windowManager.removeListener(this);
     }
@@ -268,7 +267,7 @@ class _VideoPageState extends State<VideoPage>
         videoController.changeEpisode(videoController.episode + 1);
       }
 
-      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      if (AppPlatform.usesWindowManager) {
         windowManager.addListener(this);
       }
     });
@@ -482,7 +481,7 @@ class _VideoPageState extends State<VideoPage>
     i18n = Translations.of(context);
     return OrientationBuilder(builder: (context, orientation) {
       return Observer(builder: (context) {
-        if (!Utils.isDesktop()) {
+        if (!Utils.isDesktop() && !AppPlatform.usesTVLayout) {
           if (orientation == Orientation.landscape &&
               !videoController.androidFullscreen) {
             _handleFullscreen();
@@ -557,7 +556,7 @@ class _VideoPageState extends State<VideoPage>
             ? SystemMouseCursors.none
             : SystemMouseCursors.basic,
         onHover: (_) {
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+          if (AppPlatform.isDesktop) {
             _handleTap();
           }
         },
@@ -896,11 +895,14 @@ class _VideoPageState extends State<VideoPage>
                           debugPrint('弹幕控制器创建成功');
                         },
                         option: DanmakuOption(
-                            fontSize: _fontSize,
-                            duration: _duration.toDouble(),
-                            opacity: _opacity,
-                            fontFamily: _danmakuUseSystemFont ? null : customAppFontFamily,
-                            strokeWidth: _showStroke ? 1.5 : 0.0,),
+                          fontSize: _fontSize,
+                          duration: _duration.toDouble(),
+                          opacity: _opacity,
+                          fontFamily: _danmakuUseSystemFont
+                              ? null
+                              : customAppFontFamily,
+                          strokeWidth: _showStroke ? 1.5 : 0.0,
+                        ),
                       ),
                     ),
 
@@ -1025,7 +1027,7 @@ class _VideoPageState extends State<VideoPage>
                                 },
                               ),
                             ),
-                            ((Platform.isAndroid || Platform.isIOS) &&
+                            (AppPlatform.isHandheldMobile &&
                                     !videoController.androidFullscreen)
                                 ? Container()
                                 : Container(
@@ -1034,11 +1036,8 @@ class _VideoPageState extends State<VideoPage>
                                       "${Utils.durationToString(videoController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: Platform.isWindows ||
-                                                Platform.isLinux ||
-                                                Platform.isMacOS
-                                            ? 16.0
-                                            : 12.0,
+                                        fontSize:
+                                            AppPlatform.isDesktop ? 16.0 : 12.0,
                                       ),
                                     ),
                                   ),
