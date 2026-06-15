@@ -1,8 +1,9 @@
 import UIKit
 
-final class AnimeGridViewController: UICollectionViewController {
+final class AnimeSearchResultsViewController: UICollectionViewController, UISearchResultsUpdating {
     private var allItems: [AnimeInfo] = []
     private var items: [AnimeInfo] = []
+    private var pendingQuery = ""
 
     init() {
         super.init(collectionViewLayout: AnimeGridLayout.make())
@@ -14,12 +15,15 @@ final class AnimeGridViewController: UICollectionViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "oneAnime"
         collectionView.backgroundColor = UIColor(red: 0.018, green: 0.022, blue: 0.032, alpha: 1)
         collectionView.register(AnimeCardCell.self, forCellWithReuseIdentifier: AnimeCardCell.reuseID)
         collectionView.remembersLastFocusedIndexPath = true
-
         load()
+    }
+
+    func updateSearchResults(for searchController: UISearchController) {
+        pendingQuery = searchController.searchBar.text ?? ""
+        applyFilter()
     }
 
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -33,8 +37,12 @@ final class AnimeGridViewController: UICollectionViewController {
     }
 
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let anime = items[indexPath.item]
-        navigationController?.pushViewController(AnimeDetailViewController(anime: anime), animated: true)
+        let detail = AnimeDetailViewController(anime: items[indexPath.item])
+        if let navigationController {
+            navigationController.pushViewController(detail, animated: true)
+        } else {
+            present(UINavigationController(rootViewController: detail), animated: true)
+        }
     }
 
     private func load() {
@@ -43,39 +51,35 @@ final class AnimeGridViewController: UICollectionViewController {
                 let result = try await AnimeLibrary.shared.fetchAnimeList()
                 await MainActor.run {
                     allItems = result
-                    items = result
-                    collectionView.reloadData()
+                    applyFilter()
                 }
             } catch {
                 await MainActor.run {
-                    showLoadError(error)
+                    items = []
+                    collectionView.reloadData()
                 }
             }
         }
     }
 
-    private func showLoadError(_ error: Error) {
-        let alert = UIAlertController(title: "加载失败", message: error.localizedDescription, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "重试", style: .default) { [weak self] _ in self?.load() })
-        present(alert, animated: true)
+    private func applyFilter() {
+        let query = pendingQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else {
+            items = []
+            collectionView.reloadData()
+            return
+        }
+
+        items = allItems.filter { anime in
+            [anime.name, anime.subtitle, anime.year, anime.season, anime.episode]
+                .contains { $0.localizedCaseInsensitiveContains(query) }
+        }
+        collectionView.reloadData()
     }
 }
 
-extension AnimeGridViewController: TVTabContentReloading {
+extension AnimeSearchResultsViewController: TVTabContentReloading {
     func reloadData() {
-        Task {
-            do {
-                let result = try await AnimeLibrary.shared.reloadAnimeList()
-                await MainActor.run {
-                    allItems = result
-                    items = result
-                    collectionView.reloadData()
-                }
-            } catch {
-                await MainActor.run {
-                    showLoadError(error)
-                }
-            }
-        }
+        load()
     }
 }

@@ -129,13 +129,12 @@ class _VideoPageState extends State<VideoPage>
   }
 
   void _handleDanmaku() {
-    if (videoController.danDanmakus.isEmpty) {
-      SmartDialog.showToast('当前剧集没有找到弹幕的说',
-          displayType: SmartToastType.onlyRefresh);
-      return;
-    }
     danmakuController.clear();
     videoController.danmakuOn = !videoController.danmakuOn;
+    if (videoController.danmakuOn && videoController.danDanmakus.isEmpty) {
+      SmartDialog.showToast('当前剧集没有找到弹幕的说',
+          displayType: SmartToastType.onlyRefresh);
+    }
     debugPrint('弹幕开关变更为 ${videoController.danmakuOn}');
   }
 
@@ -497,10 +496,14 @@ class _VideoPageState extends State<VideoPage>
           },
           child: Scaffold(
             body: SafeArea(
-                top: !videoController.androidFullscreen,
-                bottom: !videoController.androidFullscreen,
-                left: !videoController.androidFullscreen,
-                right: !videoController.androidFullscreen,
+                top: !videoController.androidFullscreen &&
+                    !videoController.playing,
+                bottom: !videoController.androidFullscreen &&
+                    !videoController.playing,
+                left: !videoController.androidFullscreen &&
+                    !videoController.playing,
+                right: !videoController.androidFullscreen &&
+                    !videoController.playing,
                 child: (Utils.isTablet() &&
                         MediaQuery.of(context).size.height <
                             MediaQuery.of(context).size.width)
@@ -508,11 +511,13 @@ class _VideoPageState extends State<VideoPage>
                         children: [
                           SizedBox(
                               height: MediaQuery.of(context).size.height,
-                              width: (!videoController.androidFullscreen)
+                              width: (!videoController.androidFullscreen &&
+                                      !videoController.playing)
                                   ? MediaQuery.of(context).size.height
                                   : MediaQuery.of(context).size.width,
                               child: playerBody),
-                          videoController.androidFullscreen
+                          (videoController.androidFullscreen ||
+                                  videoController.playing)
                               ? Container()
                               : BangumiPanel(
                                   title: videoController.title,
@@ -526,12 +531,14 @@ class _VideoPageState extends State<VideoPage>
                     : Column(
                         children: [
                           SizedBox(
-                              height: videoController.androidFullscreen
+                              height: (videoController.androidFullscreen ||
+                                      videoController.playing)
                                   ? MediaQuery.of(context).size.height
                                   : MediaQuery.of(context).size.width * 9 / 16,
                               width: MediaQuery.of(context).size.width,
                               child: playerBody),
-                          videoController.androidFullscreen
+                          (videoController.androidFullscreen ||
+                                  videoController.playing)
                               ? Container()
                               : BangumiPanel(
                                   title: videoController.title,
@@ -586,7 +593,13 @@ class _VideoPageState extends State<VideoPage>
                     if (event.logicalKey == LogicalKeyboardKey.space) {
                       debugPrint('空格键被按下');
                       try {
-                        playerController.playOrPause();
+                        if (videoController.playing) {
+                          playerController.pause();
+                          videoController.playing = false;
+                        } else {
+                          playerController.play();
+                          videoController.playing = true;
+                        }
                       } catch (e) {
                         debugPrint(e.toString());
                       }
@@ -964,6 +977,15 @@ class _VideoPageState extends State<VideoPage>
                                   .tertiary
                                   .withOpacity(0.5),
                             ),
+                            IconButton(
+                              color: Colors.white,
+                              icon: Icon(videoController.danmakuOn
+                                  ? Icons.subtitles
+                                  : Icons.subtitles_off),
+                              onPressed: () {
+                                _handleDanmaku();
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -987,8 +1009,10 @@ class _VideoPageState extends State<VideoPage>
                               onPressed: () {
                                 if (videoController.playing) {
                                   playerController.pause();
+                                  videoController.playing = false;
                                 } else {
                                   playerController.play();
+                                  videoController.playing = true;
                                 }
                               },
                             ),
@@ -1077,8 +1101,8 @@ class _VideoPageState extends State<VideoPage>
                             IconButton(
                               color: Colors.white,
                               icon: Icon(videoController.danmakuOn
-                                  ? Icons.comment
-                                  : Icons.comments_disabled),
+                                  ? Icons.subtitles
+                                  : Icons.subtitles_off),
                               onPressed: () {
                                 _handleDanmaku();
                               },

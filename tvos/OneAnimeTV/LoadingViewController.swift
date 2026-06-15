@@ -4,6 +4,7 @@ import UIKit
 final class LoadingViewController: UIViewController {
     private let statusLabel = UILabel()
     private let animeTitle: String
+    private let service = OneAnimeService()
 
     init(title: String) {
         animeTitle = title
@@ -29,7 +30,7 @@ final class LoadingViewController: UIViewController {
         ])
     }
 
-    func play(resource: VideoResource, title: String) {
+    func play(resource: VideoResource, title: String, animeName: String? = nil, episode: Int? = nil) {
         let asset = AVURLAsset(
             url: resource.url,
             options: [
@@ -45,11 +46,54 @@ final class LoadingViewController: UIViewController {
         let controller = AVPlayerViewController()
         controller.player = player
         controller.title = title
-        navigationController?.setViewControllers([navigationController!.viewControllers.first!, controller], animated: true)
+        attachDanmakuIfNeeded(to: controller, player: player, animeName: animeName, episode: episode)
+        if let navigationController {
+            var stack = navigationController.viewControllers
+            if !stack.isEmpty {
+                stack.removeLast()
+            }
+            stack.append(controller)
+            navigationController.setViewControllers(stack, animated: true)
+        } else {
+            present(controller, animated: true)
+        }
         player.play()
     }
 
     func show(error: Error) {
         statusLabel.text = error.localizedDescription
+    }
+
+    private func attachDanmakuIfNeeded(
+        to controller: AVPlayerViewController,
+        player: AVPlayer,
+        animeName: String?,
+        episode: Int?
+    ) {
+        guard let animeName, let episode else {
+            return
+        }
+
+        Task {
+            let comments = (try? await service.fetchDanmaku(title: animeName, episode: episode)) ?? []
+            guard !comments.isEmpty else {
+                return
+            }
+            await MainActor.run {
+                controller.loadViewIfNeeded()
+                guard let container = controller.contentOverlayView else {
+                    return
+                }
+                let overlay = DanmakuOverlayView(player: player, comments: comments)
+                overlay.translatesAutoresizingMaskIntoConstraints = false
+                container.addSubview(overlay)
+                NSLayoutConstraint.activate([
+                    overlay.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                    overlay.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                    overlay.topAnchor.constraint(equalTo: container.topAnchor),
+                    overlay.heightAnchor.constraint(equalTo: container.heightAnchor, multiplier: 0.55)
+                ])
+            }
+        }
     }
 }

@@ -57,10 +57,28 @@ final class AnimeCardCell: UICollectionViewCell {
     }
 
     func configure(with anime: AnimeInfo) {
-        titleLabel.text = anime.name
-        episodeLabel.text = anime.episode
-        seasonLabel.text = anime.year + anime.season
-        subtitleLabel.text = anime.subtitle.isEmpty ? "anime1.me #\(anime.id)" : anime.subtitle
+        configure(
+            title: anime.name,
+            subtitle: anime.subtitle.isEmpty ? "anime1.me #\(anime.id)" : anime.subtitle,
+            leadingBadge: anime.episode,
+            trailingBadge: anime.year + anime.season
+        )
+    }
+
+    func configure(with record: AnimeHistoryRecord) {
+        configure(
+            title: record.title,
+            subtitle: record.subtitle,
+            leadingBadge: record.episodeTitle,
+            trailingBadge: record.anime.year + record.anime.season
+        )
+    }
+
+    func configure(title: String, subtitle: String, leadingBadge: String, trailingBadge: String) {
+        titleLabel.text = title
+        episodeLabel.text = leadingBadge
+        seasonLabel.text = trailingBadge
+        subtitleLabel.text = subtitle
     }
 }
 

@@ -1,17 +1,21 @@
+import CryptoKit
 import Foundation
 
 enum OneAnimeAPI {
     static let animeList = URL(string: "https://d1zquzjgwo9yb.cloudfront.net/")!
     static let animeBaseURL = URL(string: "https://anime1.me")!
     static let videoAPI = URL(string: "https://v.anime1.me/api")!
+    static let dandanAPIBaseURL = URL(string: "https://api.dandanplay.net")!
     static let userAgent = "Predidit/oneAnime/1.4.5 (AppleTV; tvOS)"
+    static let dandanAppID = "kvpx7qkqjh"
+    static let dandanAppSecret = "rABUaBLqdz7aCSi3fe88ZDj2gwga9Vax"
 
     static func animePageURL(category id: Int) -> URL {
         URL(string: "https://anime1.me/?cat=\(id)")!
     }
 }
 
-struct AnimeInfo: Hashable {
+struct AnimeInfo: Codable, Hashable {
     let id: Int
     let name: String
     let episode: String
@@ -36,9 +40,23 @@ struct AnimeInfo: Hashable {
     }
 }
 
+struct AnimeEpisode: Hashable {
+    let number: Int
+    let token: String
+
+    var title: String {
+        "第 \(number) 集"
+    }
+}
+
 struct VideoResource {
     let url: URL
     let cookie: String
+}
+
+struct DanmakuComment: Hashable {
+    let time: TimeInterval
+    let text: String
 }
 
 enum OneAnimeError: LocalizedError {
@@ -75,6 +93,15 @@ final class OneAnimeService {
     }
 
     func resolveVideo(for anime: AnimeInfo, episode: Int = 1) async throws -> VideoResource {
+        let episodes = try await fetchEpisodes(for: anime)
+        guard !episodes.isEmpty else {
+            throw OneAnimeError.noVideoToken
+        }
+        let safeEpisode = min(max(episode, 1), episodes.count)
+        return try await resolveVideo(token: episodes[safeEpisode - 1].token)
+    }
+
+    func fetchEpisodes(for anime: AnimeInfo) async throws -> [AnimeEpisode] {
         let pageURL = OneAnimeAPI.animePageURL(category: anime.id)
         let html = try await fetchString(pageURL)
         var tokens = videoTokens(in: html)
@@ -84,8 +111,22 @@ final class OneAnimeService {
         if firstEntryTitle(in: html)?.hasSuffix("[01]") == true {
             tokens.reverse()
         }
-        let safeEpisode = min(max(episode, 1), tokens.count)
-        return try await fetchVideoSource(token: tokens[tokens.count - safeEpisode])
+
+        return (1...tokens.count).map { number in
+            AnimeEpisode(number: number, token: tokens[tokens.count - number])
+        }
+    }
+
+    func resolveVideo(token: String) async throws -> VideoResource {
+        try await fetchVideoSource(token: token)
+    }
+
+    func fetchDanmaku(title: String, episode: Int) async throws -> [DanmakuComment] {
+        let bangumiID = try await fetchDandanBangumiID(title: title)
+        guard bangumiID != 100000 else {
+            return []
+        }
+        return try await fetchDandanComments(bangumiID: bangumiID, episode: episode)
     }
 
     private func fetchString(_ url: URL) async throws -> String {
@@ -117,8 +158,75 @@ final class OneAnimeService {
         }
 
         let headers = (response as? HTTPURLResponse)?.allHeaderFields
-        let cookie = (headers?["Set-Cookie"] as? String) ?? ""
-        return VideoResource(url: url, cookie: videoCookie(from: cookie))
+        return VideoResource(url: url, cookie: videoCookie(from: headers?["Set-Cookie"]))
+    }
+
+    private func fetchDandanBangumiID(title: String) async throws -> Int {
+        let path = "/api/v2/search/anime"
+        var components = URLComponents(url: dandanURL(path: path), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "keyword", value: title)]
+        guard let url = components?.url else {
+            throw OneAnimeError.invalidResponse
+        }
+
+        let data = try await fetchDandanData(url: url, path: path)
+        let payload = try JSONSerialization.jsonObject(with: data)
+        guard
+            let object = payload as? [String: Any],
+            let animes = object["animes"] as? [[String: Any]]
+        else { throw OneAnimeError.invalidResponse }
+
+        return animes
+            .compactMap { $0["animeId"] as? Int }
+            .filter { $0 >= 8692 }
+            .min() ?? 100000
+    }
+
+    private func fetchDandanComments(bangumiID: Int, episode: Int) async throws -> [DanmakuComment] {
+        let path = "/api/v2/comment/\(bangumiID)\(String(format: "%04d", episode))"
+        var components = URLComponents(url: dandanURL(path: path), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "withRelated", value: "true")]
+        guard let url = components?.url else {
+            throw OneAnimeError.invalidResponse
+        }
+
+        let data = try await fetchDandanData(url: url, path: path)
+        let payload = try JSONSerialization.jsonObject(with: data)
+        guard
+            let object = payload as? [String: Any],
+            let comments = object["comments"] as? [[String: Any]]
+        else { return [] }
+
+        return comments.compactMap { comment in
+            guard
+                let position = comment["p"] as? String,
+                let text = comment["m"] as? String,
+                let seconds = Double(position.split(separator: ",").first ?? "")
+            else { return nil }
+            return DanmakuComment(time: seconds, text: text)
+        }
+    }
+
+    private func fetchDandanData(url: URL, path: String) async throws -> Data {
+        let timestamp = Int(Date().timeIntervalSince1970)
+        var request = URLRequest(url: url)
+        request.setValue(OneAnimeAPI.userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue("1", forHTTPHeaderField: "X-Auth")
+        request.setValue(OneAnimeAPI.dandanAppID, forHTTPHeaderField: "X-AppId")
+        request.setValue(String(timestamp), forHTTPHeaderField: "X-Timestamp")
+        request.setValue(dandanSignature(path: path, timestamp: timestamp), forHTTPHeaderField: "X-Signature")
+        let (data, _) = try await session.data(for: request)
+        return data
+    }
+
+    private func dandanURL(path: String) -> URL {
+        URL(string: OneAnimeAPI.dandanAPIBaseURL.absoluteString + path)!
+    }
+
+    private func dandanSignature(path: String, timestamp: Int) -> String {
+        let text = OneAnimeAPI.dandanAppID + String(timestamp) + path + OneAnimeAPI.dandanAppSecret
+        let digest = SHA256.hash(data: Data(text.utf8))
+        return Data(digest).base64EncodedString()
     }
 
     private func videoTokens(in html: String) -> [String] {
@@ -145,8 +253,18 @@ final class OneAnimeService {
         }
     }
 
-    private func videoCookie(from header: String) -> String {
-        header
+    private func videoCookie(from header: Any?) -> String {
+        let values: [String]
+        if let header = header as? String {
+            values = [header]
+        } else if let header = header as? [String] {
+            values = header
+        } else {
+            values = []
+        }
+
+        return values
+            .joined(separator: "; ")
             .split(separator: ",")
             .map(String.init)
             .flatMap { $0.split(separator: ";").map(String.init) }
@@ -159,5 +277,25 @@ final class OneAnimeService {
                 return trimmed
             }
             .joined(separator: "; ")
+    }
+}
+
+actor AnimeLibrary {
+    static let shared = AnimeLibrary()
+
+    private let service = OneAnimeService()
+    private var cachedList: [AnimeInfo]?
+
+    func fetchAnimeList() async throws -> [AnimeInfo] {
+        if let cachedList {
+            return cachedList
+        }
+        return try await reloadAnimeList()
+    }
+
+    func reloadAnimeList() async throws -> [AnimeInfo] {
+        let result = try await service.fetchAnimeList()
+        cachedList = result
+        return result
     }
 }
