@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 import 'package:oneanime/pages/popular/popular_controller.dart';
 import 'package:oneanime/bean/appbar/sys_app_bar.dart';
 import 'package:oneanime/bean/settings/settings.dart';
+import 'package:oneanime/bean/settings/theme_provider.dart';
 import 'package:oneanime/i18n/strings.g.dart';
 
 class MyPage extends StatefulWidget {
@@ -43,13 +44,29 @@ class _MyPageState extends State<MyPage> {
   @override
   Widget build(BuildContext context) {
     i18n = Translations.of(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return PopScope(
       canPop: false,
       onPopInvoked: (bool didPop) async {
         onBackPressed(context);
       },
       child: Scaffold(
-        appBar: SysAppBar(title: Text(i18n.menu.my)),
+        appBar: SysAppBar(
+          title: Text(i18n.menu.my),
+          actions: [
+            IconButton(
+              icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+              onPressed: () async {
+                final newMode = isDark ? ThemeMode.light : ThemeMode.dark;
+                final newThemeString = isDark ? 'light' : 'dark';
+                themeProvider.setThemeMode(newMode);
+                await setting.put(SettingBoxKey.themeMode, newThemeString);
+              },
+            ),
+          ],
+        ),
         body: Column(
           children: [
             InkWell(
