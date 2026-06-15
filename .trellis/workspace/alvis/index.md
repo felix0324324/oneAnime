@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 2
+- **Total Sessions**: 3
 - **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~73 | Active |
+| `journal-1.md` | ~106 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 3 | 2026-06-15 | Dandan Subtitle Download Test Script | `6f0cd4e` | `feature/tvos` |
 | 2 | 2026-06-15 | Improve video player UI and Danmaku | `69c43f2` | `feature/tvos` |
 | 1 | 2026-06-15 | Add night mode toggle | `d509398` | `trellis/base` |
 <!-- @@@/auto:session-history -->

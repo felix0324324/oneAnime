@@ -71,3 +71,36 @@ Improved video player UI by hiding navigation and title when playing. Added danm
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Dandan Subtitle Download Test Script
+
+**Date**: 2026-06-15
+**Task**: Dandan Subtitle Download Test Script
+**Branch**: `feature/tvos`
+
+### Summary
+
+Wrote a standalone test script to verify subtitle downloads from dandanAPIBaseURL using both signature and credential authentication modes, properly referencing the GitHub repo URL in the User-Agent. Verified the script locally.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6f0cd4e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
