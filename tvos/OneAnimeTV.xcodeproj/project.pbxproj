@@ -14,7 +14,7 @@
 		2F0000010000000000000002 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				"Info.plist",
 			);
 			target = 2F0000010000000000000003 /* OneAnimeTV */;
 		};
@@ -90,7 +90,7 @@
 				};
 			};
 			buildConfigurationList = 2F000001000000000000000C /* Build configuration list for PBXProject "OneAnimeTV" */;
-			compatibilityVersion = "Xcode 16.0.Superseded.1";
+			compatibilityVersion = "Xcode 16.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -205,20 +205,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2F0000010000000000000008 /* Build configuration list for PBXNativeTarget "OneAnimeTV" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				2F000001000000000000000F /* Debug */,
-				2F0000010000000000000010 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		2F000001000000000000000C /* Build configuration list for PBXProject "OneAnimeTV" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2F000001000000000000000D /* Debug */,
 				2F000001000000000000000E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2F0000010000000000000008 /* Build configuration list for PBXNativeTarget "OneAnimeTV" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2F000001000000000000000F /* Debug */,
+				2F0000010000000000000010 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
